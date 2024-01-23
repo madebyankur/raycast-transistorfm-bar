@@ -1,4 +1,4 @@
-import preference from './shortcut';
+import preference from "./shortcut";
 
 export const requestOptions = {
   method: "GET",

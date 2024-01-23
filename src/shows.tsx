@@ -1,11 +1,11 @@
-import fetch from 'node-fetch';
-import { useEffect, useRef, useState } from 'react';
+import fetch from "node-fetch";
+import { useEffect, useRef, useState } from "react";
 
-import { Action, ActionPanel, Color, Detail, Icon, List } from '@raycast/api';
-import { useCachedPromise } from '@raycast/utils';
+import { Action, ActionPanel, Color, Detail, Icon, List } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 
-import IShows from './interfaces/shows';
-import { requestOptions } from './utils/requests';
+import IShows from "./interfaces/shows";
+import { requestOptions } from "./utils/requests";
 
 export default function Command() {
   const [showingDetail, setShowingDetail] = useState(true);

@@ -1,12 +1,12 @@
-import fetch from 'node-fetch';
-import { useEffect, useRef, useState } from 'react';
+import fetch from "node-fetch";
+import { useEffect, useRef, useState } from "react";
 
-import { Icon, MenuBarExtra, open } from '@raycast/api';
-import { useCachedPromise } from '@raycast/utils';
+import { Icon, MenuBarExtra, open } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 
-import IAnalytics from './interfaces/analytics';
-import IShows from './interfaces/shows';
-import { requestOptions } from './utils/requests';
+import IAnalytics from "./interfaces/analytics";
+import IShows from "./interfaces/shows";
+import { requestOptions } from "./utils/requests";
 
 export default function Command() {
   const [defaultShow, setDefaultShow] = useState<string | undefined>("Bingo");
