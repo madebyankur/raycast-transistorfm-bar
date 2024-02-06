@@ -1,73 +1,71 @@
-import fetch from "node-fetch";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { Icon, MenuBarExtra, open } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
+import { Icon, MenuBarExtra, open, showHUD } from "@raycast/api";
 
 import IAnalytics from "./interfaces/analytics";
 import IShows from "./interfaces/shows";
-import { requestOptions } from "./utils/requests";
+import HTTPRequest from "./utils/request";
 
 export default function Command() {
-  const [defaultShow, setDefaultShow] = useState<string | undefined>("Bingo");
+  const [defaultShow, setDefaultShow] = useState<string | undefined>();
 
-  const abortable = useRef<AbortController>();
+  const { data, isLoading, error } = HTTPRequest({
+    url: "/shows",
+  }) as {
+    data: IShows | undefined;
+    isLoading: boolean;
+    error: { title: string; message: string; markdown: string } | undefined;
+  };
 
-  const { isLoading, data } = useCachedPromise(
-    async (url: string) => {
-      const response = await fetch(url, requestOptions);
-      const { data } = (await response.json()) as IShows;
-      return data;
-    },
-    ["https://api.transistor.fm/v1/shows"],
-    {
-      abortable,
-    },
-  );
+  if (!data) {
+    return <MenuBarExtra isLoading={isLoading} />;
+  }
 
   useEffect(() => {
-    data && setDefaultShow(data.pop()?.attributes.slug);
+    setDefaultShow(data.data.pop()?.attributes.slug);
   }, [data, isLoading]);
 
-  const { isLoading: isLoadingAnalytics, data: analytics } = useCachedPromise(
-    async (url: string) => {
-      const response = await fetch(url, requestOptions);
-      const result = await response.json();
-      const { data } = result as IAnalytics;
-      return data;
-    },
-    [`https://api.transistor.fm/v1/analytics/${defaultShow}`],
-    {
-      // to make sure the screen isn't flickering when the searchText changes
-      keepPreviousData: true,
-    },
-  );
+  const { data: analyticsData, isLoading: analyticsIsLoading } = HTTPRequest({
+    url: `/analytics/${defaultShow}`,
+  }) as {
+    data: IAnalytics | undefined;
+    isLoading: boolean;
+    error: { title: string; message: string; markdown: string } | undefined;
+  };
 
-  const downloads = data && analytics && analytics.attributes.downloads.pop()!.downloads.toString();
+  if (!analyticsData) {
+    return <MenuBarExtra isLoading={isLoading} />;
+  }
 
-  return (
-    <MenuBarExtra icon={Icon.Microphone} isLoading={isLoading && isLoadingAnalytics} title={downloads}>
-      <MenuBarExtra.Item
-        title="Open TransistorFM Dashboard"
-        onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}`)}
-      />
+  const downloads = analyticsData?.data.attributes.downloads.pop()!.downloads.toLocaleString();
 
-      <MenuBarExtra.Separator />
+  if (analyticsData) {
+    return (
+      <MenuBarExtra icon={Icon.Download} isLoading={isLoading && analyticsIsLoading} title={downloads}>
+        <MenuBarExtra.Item
+          title="Open TransistorFM Dashboard"
+          onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}`)}
+        />
 
-      <MenuBarExtra.Item
-        title="Episodes"
-        onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}/episodes`)}
-      />
+        <MenuBarExtra.Separator />
 
-      <MenuBarExtra.Item
-        title="Distribution"
-        onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}/distribution`)}
-      />
+        <MenuBarExtra.Item
+          title="Episodes"
+          onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}/episodes`)}
+        />
 
-      <MenuBarExtra.Item
-        title="Analytics"
-        onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}/analytics`)}
-      />
-    </MenuBarExtra>
-  );
+        <MenuBarExtra.Item
+          title="Distribution"
+          onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}/distribution`)}
+        />
+
+        <MenuBarExtra.Item
+          title="Analytics"
+          onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}/analytics`)}
+        />
+      </MenuBarExtra>
+    );
+  } else if (error) {
+    showHUD(error.message);
+  }
 }

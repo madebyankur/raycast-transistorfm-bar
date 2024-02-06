@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
-
 import { Action, ActionPanel, Detail, Icon, List, showToast, Toast } from "@raycast/api";
+import { useCachedState } from "@raycast/utils";
 
-import { showMetadata } from "./components/showMetadata";
 import mappings from "./components/showMetadata/mappings";
 import IShows from "./interfaces/shows";
 import HTTPRequest from "./utils/request";
 
-export default function Command() {
+export default function DefaultShowCommand() {
+  const [defaultShow, setDefaultShow] = useCachedState<string | undefined>("default-show", undefined);
+  const [defaultShowTitle, setDefaultShowTitle] = useCachedState<string | undefined>("default-show", undefined);
+
   const { data, isLoading, error } = HTTPRequest({
     url: "/shows",
   }) as {
@@ -19,38 +20,27 @@ export default function Command() {
   const showData = data?.data;
 
   if (showData) {
-    const [showingDetail, setShowingDetail] = useState<boolean>(true);
-    const [defaultShow, setDefaultShow] = useState<string | undefined>("");
-
-    useEffect(() => {
-      setDefaultShow(showData.pop()?.attributes.slug);
-    }, []);
-
     return (
-      <List isLoading={!defaultShow || isLoading} isShowingDetail={!showingDetail}>
+      <List isLoading={!defaultShow || !defaultShowTitle || isLoading}>
         {showData &&
           !isLoading &&
           showData.map((show) => {
-            const props: Partial<List.Item.Props> = showingDetail
-              ? {
-                  detail: <List.Item.Detail markdown={mappings.author(show).value} />,
-                }
-              : {
-                  accessories: [{ text: defaultShow === show.attributes.slug ? "Default" : "" }],
-                  detail: <List.Item.Detail metadata={showMetadata(show)} />,
-                };
-
             return (
               <List.Item
                 key={show.attributes.slug}
                 icon={mappings.imageUrl(show).value || Icon.Bolt}
                 title={mappings.title(show).value!}
                 subtitle={mappings.description(show).value}
-                {...props}
+                accessories={[{ text: mappings.author(show).value }, { icon: Icon.PersonCircle }]}
                 actions={
                   <ActionPanel>
-                    <Action title="Toggle Detail" onAction={() => setShowingDetail(!showingDetail)} />
-                    <Action title="Set Default for Menu Bar" onAction={() => setDefaultShow(show.attributes.slug)} />
+                    <Action
+                      title="Set Default for Menu Bar"
+                      onAction={() => {
+                        setDefaultShow(show.attributes.slug);
+                        setDefaultShowTitle(mappings.title(show).value);
+                      }}
+                    />
                   </ActionPanel>
                 }
               ></List.Item>
