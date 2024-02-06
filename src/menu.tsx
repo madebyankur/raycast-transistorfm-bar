@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 
-import { Icon, MenuBarExtra, open, showHUD } from "@raycast/api";
+import { Detail, Icon, LocalStorage, MenuBarExtra, open, showToast, Toast } from "@raycast/api";
 
 import IAnalytics from "./interfaces/analytics";
 import IShows from "./interfaces/shows";
 import HTTPRequest from "./utils/request";
 
 export default function Command() {
-  const [defaultShow, setDefaultShow] = useState<string | undefined>();
+  const [defaultShow, setDefaultShow] = useState<string | undefined>("");
+  const [defaultShowTitle, setDefaultShowTitle] = useState<string | undefined>("");
 
-  const { data, isLoading, error } = HTTPRequest({
+  const { data, isLoading } = HTTPRequest({
     url: "/shows",
   }) as {
     data: IShows | undefined;
@@ -17,15 +18,32 @@ export default function Command() {
     error: { title: string; message: string; markdown: string } | undefined;
   };
 
-  if (!data) {
-    return <MenuBarExtra isLoading={isLoading} />;
-  }
-
   useEffect(() => {
-    setDefaultShow(data.data.pop()?.attributes.slug);
-  }, [data, isLoading]);
+    async function fetchDefaultShow() {
+      const showSlug = await LocalStorage.getItem<string>("defaultShowSlug");
+      const showTitle = await LocalStorage.getItem<string>("defaultShowTitle");
 
-  const { data: analyticsData, isLoading: analyticsIsLoading } = HTTPRequest({
+      if (showSlug) {
+        setDefaultShow(showSlug);
+      } else {
+        setDefaultShow(data?.data.pop()?.attributes.slug);
+      }
+
+      if (showTitle) {
+        setDefaultShowTitle(showTitle);
+      } else {
+        setDefaultShowTitle(data?.data.pop()?.attributes.title);
+      }
+    }
+
+    fetchDefaultShow();
+  }, []);
+
+  const {
+    data: analyticsData,
+    isLoading: analyticsIsLoading,
+    error: analyticsError,
+  } = HTTPRequest({
     url: `/analytics/${defaultShow}`,
   }) as {
     data: IAnalytics | undefined;
@@ -33,7 +51,7 @@ export default function Command() {
     error: { title: string; message: string; markdown: string } | undefined;
   };
 
-  if (!analyticsData) {
+  if (isLoading) {
     return <MenuBarExtra isLoading={isLoading} />;
   }
 
@@ -42,6 +60,10 @@ export default function Command() {
   if (analyticsData) {
     return (
       <MenuBarExtra icon={Icon.Download} isLoading={isLoading && analyticsIsLoading} title={downloads}>
+        <MenuBarExtra.Item title={"Current Show: " + defaultShowTitle} />
+
+        <MenuBarExtra.Separator />
+
         <MenuBarExtra.Item
           title="Open TransistorFM Dashboard"
           onAction={() => open(`https://dashboard.transistor.fm/shows/${defaultShow}`)}
@@ -65,7 +87,13 @@ export default function Command() {
         />
       </MenuBarExtra>
     );
-  } else if (error) {
-    showHUD(error.message);
+  } else if (analyticsError) {
+    showToast({
+      style: Toast.Style.Failure,
+      title: analyticsError.title,
+      message: analyticsError.message,
+    });
+
+    return <Detail markdown={analyticsError.markdown} />;
   }
 }

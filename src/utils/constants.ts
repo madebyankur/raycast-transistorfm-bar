@@ -72,7 +72,7 @@ export const EPISODE_LABELS = {
   publishedAt: "Published At",
   number: "Number",
   season: "Season",
-  shareUrl: "Sharing Link",
+  shareUrl: "Share URL",
   status: "Status",
   transcriptUrl: "Transcript URL",
   type: "Type",

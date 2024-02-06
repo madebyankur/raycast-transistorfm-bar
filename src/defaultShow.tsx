@@ -1,13 +1,21 @@
-import { Action, ActionPanel, Detail, Icon, List, showToast, Toast } from "@raycast/api";
-import { useCachedState } from "@raycast/utils";
+import { useState } from "react";
 
-import mappings from "./components/showMetadata/mappings";
-import IShows from "./interfaces/shows";
-import HTTPRequest from "./utils/request";
+import mappings from "@/components/showMetadata/mappings";
+import IShows from "@/interfaces/shows";
+import HTTPRequest from "@/utils/request";
+import { Action, ActionPanel, Detail, Icon, List, LocalStorage, showToast, Toast } from "@raycast/api";
 
 export default function DefaultShowCommand() {
-  const [defaultShow, setDefaultShow] = useCachedState<string | undefined>("default-show", undefined);
-  const [defaultShowTitle, setDefaultShowTitle] = useCachedState<string | undefined>("default-show", undefined);
+  const [defaultShow, setDefaultShow] = useState<string | undefined>();
+  const [defaultShowTitle, setDefaultShowTitle] = useState<string | undefined>();
+
+  // Function to set the default show
+  async function setDefaultShowMethod(slug: string, title: string) {
+    setDefaultShow(slug);
+    setDefaultShowTitle(title);
+    await LocalStorage.setItem("defaultShowSlug", slug);
+    await LocalStorage.setItem("defaultShowTitle", title);
+  }
 
   const { data, isLoading, error } = HTTPRequest({
     url: "/shows",
@@ -31,14 +39,17 @@ export default function DefaultShowCommand() {
                 icon={mappings.imageUrl(show).value || Icon.Bolt}
                 title={mappings.title(show).value!}
                 subtitle={mappings.description(show).value}
-                accessories={[{ text: mappings.author(show).value }, { icon: Icon.PersonCircle }]}
+                accessories={[
+                  { text: mappings.createdAt(show).value },
+                  { icon: Icon.Dot },
+                  { text: mappings.author(show).value, icon: Icon.PersonCircle },
+                ]}
                 actions={
                   <ActionPanel>
                     <Action
                       title="Set Default for Menu Bar"
                       onAction={() => {
-                        setDefaultShow(show.attributes.slug);
-                        setDefaultShowTitle(mappings.title(show).value);
+                        setDefaultShowMethod(show.attributes.slug, show.attributes.title);
                       }}
                     />
                   </ActionPanel>

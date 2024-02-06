@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 
+import { showMetadata } from "@/components/showMetadata";
+import mappings from "@/components/showMetadata/mappings";
+import IShows from "@/interfaces/shows";
+import HTTPRequest from "@/utils/request";
 import { Action, ActionPanel, Detail, Icon, List, showToast, Toast } from "@raycast/api";
-
-import { showMetadata } from "./components/showMetadata";
-import mappings from "./components/showMetadata/mappings";
-import IShows from "./interfaces/shows";
-import HTTPRequest from "./utils/request";
 
 export default function Command() {
   const { data, isLoading, error } = HTTPRequest({
@@ -33,10 +32,14 @@ export default function Command() {
           showData.map((show) => {
             const props: Partial<List.Item.Props> = showingDetail
               ? {
+                  accessories: [
+                    { text: mappings.createdAt(show).value },
+                    { tag: defaultShow === show.attributes.slug ? "Default" : "" },
+                  ],
                   detail: <List.Item.Detail markdown={mappings.author(show).value} />,
                 }
               : {
-                  accessories: [{ text: defaultShow === show.attributes.slug ? "Default" : "" }],
+                  accessories: [{ tag: defaultShow === show.attributes.slug ? "Default" : "" }],
                   detail: <List.Item.Detail metadata={showMetadata(show)} />,
                 };
 

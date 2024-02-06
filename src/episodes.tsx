@@ -1,11 +1,10 @@
 import { useState } from "react";
 
-import { Action, ActionPanel, Detail, Icon, List, showToast, Toast } from "@raycast/api";
-
-import { episodeMetadata } from "./components/episodeMetadata";
-import mappings from "./components/episodeMetadata/mappings";
-import IEpisodes from "./interfaces/episodes";
-import HTTPRequest from "./utils/request";
+import { episodeMetadata } from "@/components/episodeMetadata";
+import mappings from "@/components/episodeMetadata/mappings";
+import IEpisodes from "@/interfaces/episodes";
+import HTTPRequest from "@/utils/request";
+import { Action, ActionPanel, Clipboard, Detail, Icon, List, showToast, Toast } from "@raycast/api";
 
 export default function Command() {
   const { data, isLoading, error } = HTTPRequest({
@@ -28,11 +27,11 @@ export default function Command() {
           episodeData.map((episode) => {
             const props: Partial<List.Item.Props> = showingDetail
               ? {
-                  // accessories: [{ text: episode.relationships.show.data.id }],
+                  accessories: [{ text: mappings.createdAt(episode).value }, { tag: mappings.type(episode).value }],
                   detail: <List.Item.Detail markdown={mappings.number(episode).value?.toLocaleString()} />,
                 }
               : {
-                  // accessories: [{ text: episode.relationships.show.data.id }],
+                  accessories: [{ text: episode.relationships.show.data.id }],
                   detail: <List.Item.Detail metadata={episodeMetadata(episode)} />,
                 };
             return (
@@ -45,6 +44,10 @@ export default function Command() {
                 actions={
                   <ActionPanel>
                     <Action title="Toggle Detail" onAction={() => setShowingDetail(!showingDetail)} />
+                    <Action
+                      title="Copy Share URL"
+                      onAction={async () => await Clipboard.copy(episode.attributes.share_url)}
+                    />
                   </ActionPanel>
                 }
               ></List.Item>
